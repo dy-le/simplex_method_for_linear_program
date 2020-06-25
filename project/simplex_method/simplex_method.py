@@ -2,15 +2,49 @@ import numpy as np
 
 
 class simplex_method:
-    def __init__(self, A, b, c, B, n):
+    def __init__(self, A, b, c):
         self.A = A
         self.c = c
-        self.B = B
-        self.n = n
-
-        self.xb = np.transpose([b]) 
+        self.B = 0
+        self.n = 0
+        self.gen_B_n()
+        self.xb = np.transpose([b])
         self.zn = -self.c[self.n]
+    
+        self.optimal = 0
+
+    def gen_B_n(self):
+        n_contrain = len(self.A)
+        n_var = len(self.c) - n_contrain
+
+        self.B = np.arange(n_var,n_var + n_contrain)[np.newaxis].T
+        self.n = np.arange(0,n_var)[np.newaxis].T
+
+    def solve_two_phase(self, verbor=False):
         
+        print("Phase one")
+        result = self.dual_simplex(verbor=verbor)
+        
+        print("Phase two")
+        result = self.primal_simplex(verbor=verbor)
+        
+        return result
+
+    def solve(self, verbor=False):
+        self.check_problem()
+
+        if False not in (self.xb >= 0):
+            result = self.primal_simplex(verbor=verbor)
+        elif False not in (self.zn >= 0):
+            result = self.solve_two_phase(verbor=verbor)
+
+        else:
+            self.zn[self.zn<0] *= -1
+            result = self.solve_two_phase(verbor=verbor)
+
+
+        return result
+
     def primal_simplex(self, verbor=False):
 
         count = 0
@@ -53,19 +87,19 @@ class simplex_method:
             N = self.A[:,self.n].reshape((-1, len(self.n)))
 
             count += 1
-            optimal = self.xb.T.dot(self.c[self.B]).reshape(-1)[0]
+            self.optimal = self.xb.T.dot(self.c[self.B]).reshape(-1)[0]
 
             if verbor:
                 A_hat = np.concatenate([self.B.T,self.xb.T,N.T,Bi.T]).T
                 print("iter:", count)
                 print("Dictionary\n", A_hat)
-                print("optimal:", optimal)
+                print("optimal:", self.optimal)
 
         sol = np.zeros(len(self.c))
         sol[self.B] = self.xb
 
         return {"iter": count,
-                "optimal": optimal,
+                "optimal": self.optimal,
                 "sol": sol}
 
     def dual_simplex(self, verbor=False):
@@ -112,23 +146,39 @@ class simplex_method:
             A_hat = np.concatenate([self.B.T,self.xb.T,N.T,Bi.T]).T
 
             count += 1
-            optimal = self.xb.T.dot(self.c[self.B]).reshape(-1)[0]
+            self.optimal = self.xb.T.dot(self.c[self.B]).reshape(-1)[0]
 
             if verbor:
                 A_hat = np.concatenate([self.B.T,self.xb.T,N.T,Bi.T]).T
                 print("iter:", count)
                 print("Dictionary\n", A_hat)
-                print("optimal:", optimal)
+                print("optimal:", self.optimal)
         
         sol = np.zeros(len(self.c))
         sol[self.B] = self.xb
         
         return {
             "iter": count,
-            "optimal": optimal,
+            "optimal": self.optimal,
             "sol": sol
         }
     
+    def check_problem(self):
+        if False not in (self.xb >= 0) and False not in (self.zn <= 0):
+            print("Optimal — the problem was trivial")
+
+        elif False not in (self.xb >= 0) and False in (self.zn <= 0):
+            print("primal feasible")
+            print("run primal simplex method")
+        
+        elif False in (self.xb >= 0) and False not in (self.zn <= 0):
+            print("run dual simplex method")
+        else:
+            print("dual feasible")
+            print("Start convert negative components")
+            print("run dual simplex method")
+
+
 if __name__ == "__main__":
 
     # inputs 
@@ -137,18 +187,12 @@ if __name__ == "__main__":
     A = np.array([[-1,-1, -1, 1, 0],
                 [2, -1,  1, 0, 1]])
 
-
     # b will contain the amount of resources 
     b = np.array([-2, 1])
-
 
     # c will contain coefficients of objective function Z 
     c = np.array([2, -6, 0, 0, 0])
 
-    B = np.array([[3], [4]])
-    n = np.array([[0], [1], [2]])
+    simplex = simplex_method(A,b,c)
 
-    simplex = simplex_method(A,b,c,B,n)
-    simplex.dual_simplex(
-        verbor=True
-    )
+    print(simplex.solve())
