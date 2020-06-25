@@ -51,12 +51,12 @@ class Simplex_method:
         elif False in (self.xb >= 0) and False not in (self.zn <= 0):
             print("run dual simplex method")
             result = self.solve_two_phase(verbor=verbor)
+
         else:
             print("dual feasible")
             print("Start convert negative components")
-
             # self.zn = np.maximum(self.zn, -self.zn)
-            self.zn = np.maximum(self.zn, 0)
+            # self.zn = np.maximum(self.zn, 0)
 
             print("run two phase simplex method")
             result = self.solve_two_phase(verbor=verbor)
@@ -65,7 +65,7 @@ class Simplex_method:
         return result
 
     def primal_simplex(self, verbor=False):
-
+        optimal = -np.inf
         count = 0
         Bi = self.A[:,self.B].reshape((-1,len(self.B)))
         N = self.A[:,self.n].reshape((-1, len(self.n)))
@@ -116,15 +116,25 @@ class Simplex_method:
                 print("Dictionary\n", A_hat)
                 print("optimal:", self.optimal)
 
+            # if self.optimal > optimal:
+            #     optimal = self.optimal
+            # else:
+            #     self.status = 'Infeasible'
+            #     return {'status': self.status}
+
         sol = np.zeros(len(self.c))
         sol[self.B] = self.xb
 
-        return {"iter": self.count,
-                "optimal": self.optimal,
-                "sol": sol}
+        return {
+            'status': self.status,
+            "iter": self.count,
+            "optimal": self.optimal,
+            "sol": sol
+        }
 
     def dual_simplex(self, verbor=False):
 
+        optimal = np.inf
         count = 0
         Bi = self.A[:,self.B].reshape((-1, len(self.B)))
         N  = self.A[:,self.n].reshape((-1, len(self.n)))
@@ -176,11 +186,18 @@ class Simplex_method:
                 print("iter:", count)
                 print("Dictionary\n", A_hat)
                 print("optimal:", self.optimal)
+
+            if self.optimal < optimal:
+                optimal = self.optimal
+            else:
+                self.status = 'Infeasible'
+                return {'status': self.status}
         
         sol = np.zeros(len(self.c))
         sol[self.B] = self.xb
         
         return {
+            'status': self.status,
             "iter": self.count,
             "optimal": self.optimal,
             "sol": sol
@@ -204,7 +221,7 @@ if __name__ == "__main__":
     # # A will contain the coefficients of the constraints 
     # A = np.array([[-1,-1, 1, 0, 0],
     #             [-1, 1, 0, 1, 0],
-    #             [-1, 2, 0, 0, 1]])
+    #             [1, 2, 0, 0, 1]])
 
     # # b will contain the amount of resources 
     # b = np.array([-3, -1, 2])
