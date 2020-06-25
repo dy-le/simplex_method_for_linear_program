@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class simplex_method:
+class Simplex_method:
     def __init__(self, A, b, c):
         self.A = A
         self.c = c
@@ -10,7 +10,7 @@ class simplex_method:
         self.gen_B_n()
         self.xb = np.transpose([b])
         self.zn = -self.c[self.n]
-    
+        self.status = 'Optimal'    
         self.optimal = 0
 
     def gen_B_n(self):
@@ -30,16 +30,35 @@ class simplex_method:
         
         return result
 
+
     def solve(self, verbor=False):
-        self.check_problem()
+        self.count = 0
+        for i in self.n:
+            if True not in (self.A[:,i] > 0) and self.c[i] > 0:
+                print("Unbounded")
+                self.status = 'Unbounded'
+                return {'status': self.status}
+        
+        if False not in (self.xb >= 0) and False not in (self.zn <= 0):
+            print("Optimal — the problem was trivial")
+            return
 
-        if False not in (self.xb >= 0):
+        elif False not in (self.xb >= 0) and False in (self.zn <= 0):
+            print("primal feasible")
+            print("run primal simplex method")
             result = self.primal_simplex(verbor=verbor)
-        elif False not in (self.zn >= 0):
+        
+        elif False in (self.xb >= 0) and False not in (self.zn <= 0):
+            print("run dual simplex method")
             result = self.solve_two_phase(verbor=verbor)
-
         else:
-            self.zn[self.zn<0] *= -1
+            print("dual feasible")
+            print("Start convert negative components")
+
+            # self.zn = np.maximum(self.zn, -self.zn)
+            self.zn = np.maximum(self.zn, 0)
+
+            print("run two phase simplex method")
             result = self.solve_two_phase(verbor=verbor)
 
 
@@ -53,6 +72,7 @@ class simplex_method:
 
         if verbor:
             A_hat = np.concatenate([self.B.T,self.xb.T,N.T,Bi.T]).T
+            print("Objective\n", np.concatenate([self.zn, self.xb]).T)
             print("Dictionary\n", A_hat)
 
         while(np.min(self.zn) < 0):
@@ -87,6 +107,7 @@ class simplex_method:
             N = self.A[:,self.n].reshape((-1, len(self.n)))
 
             count += 1
+            self.count += 1
             self.optimal = self.xb.T.dot(self.c[self.B]).reshape(-1)[0]
 
             if verbor:
@@ -98,7 +119,7 @@ class simplex_method:
         sol = np.zeros(len(self.c))
         sol[self.B] = self.xb
 
-        return {"iter": count,
+        return {"iter": self.count,
                 "optimal": self.optimal,
                 "sol": sol}
 
@@ -110,6 +131,7 @@ class simplex_method:
 
         if verbor:
             A_hat = np.concatenate([self.B.T,self.xb.T,N.T,Bi.T]).T
+            print("Objective\n", np.concatenate([self.zn, self.xb]).T)
             print("Dictionary\n", A_hat)
         
         while(np.min(self.xb)<0):
@@ -146,6 +168,7 @@ class simplex_method:
             A_hat = np.concatenate([self.B.T,self.xb.T,N.T,Bi.T]).T
 
             count += 1
+            self.count += 1
             self.optimal = self.xb.T.dot(self.c[self.B]).reshape(-1)[0]
 
             if verbor:
@@ -158,25 +181,10 @@ class simplex_method:
         sol[self.B] = self.xb
         
         return {
-            "iter": count,
+            "iter": self.count,
             "optimal": self.optimal,
             "sol": sol
         }
-    
-    def check_problem(self):
-        if False not in (self.xb >= 0) and False not in (self.zn <= 0):
-            print("Optimal — the problem was trivial")
-
-        elif False not in (self.xb >= 0) and False in (self.zn <= 0):
-            print("primal feasible")
-            print("run primal simplex method")
-        
-        elif False in (self.xb >= 0) and False not in (self.zn <= 0):
-            print("run dual simplex method")
-        else:
-            print("dual feasible")
-            print("Start convert negative components")
-            print("run dual simplex method")
 
 
 if __name__ == "__main__":
@@ -193,6 +201,17 @@ if __name__ == "__main__":
     # c will contain coefficients of objective function Z 
     c = np.array([2, -6, 0, 0, 0])
 
-    simplex = simplex_method(A,b,c)
+    # # A will contain the coefficients of the constraints 
+    # A = np.array([[-1,-1, 1, 0, 0],
+    #             [-1, 1, 0, 1, 0],
+    #             [-1, 2, 0, 0, 1]])
 
-    print(simplex.solve())
+    # # b will contain the amount of resources 
+    # b = np.array([-3, -1, 2])
+
+    # # c will contain coefficients of objective function Z 
+    # c = np.array([1, -3, 0, 0, 0])
+
+    simplex = Simplex_method(A,b,c)
+
+    print(simplex.solve(verbor=False))
