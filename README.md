@@ -19,3 +19,5 @@ strategy for this game.
 ## Part 3: Interior-Point Methods
 
 ## Part 4: Integer Programming
+
+Branch-and-Bound Methods
