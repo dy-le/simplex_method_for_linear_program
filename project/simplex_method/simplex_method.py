@@ -1,4 +1,4 @@
-import numpy as numpy
+import numpy as np
 
 class Simplex_method:
     def __init__(self, A, b, c):
@@ -243,7 +243,7 @@ class Simplex_method:
             "sol": sol
         }
 
-if if __name__ == "__main__":
+if __name__ == "__main__":
     print("Exercise 2.3")
     # A will contain the coefficients of the constraints
     A = np.array([[-1, -1, -1, 1, 0],
